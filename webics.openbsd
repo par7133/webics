@@ -1,0 +1,141 @@
+#!/bin/sh
+
+set +e -p -m
+
+apath="/home/ut/webics"
+
+if [ "X$1" = "X" ]; then
+  echo "usage: webics [setup|run] webappname"
+  exit
+fi
+
+param1=$1
+param2=$2
+
+if [ "X$param1" = "X" ] ; then
+  echo "1st param missied" 
+  exit 1
+fi
+
+if [ "X$param2" = "X" ] ; then
+  echo "2nd param missied" 
+  exit 1
+fi
+
+myroot=`grep ${param2} $apath/webics.list`
+
+if [ "X$myroot" = "X" ] ; then
+  echo "${param2} is not known" 
+  exit 1
+fi
+
+case $param1 in
+setup )
+
+	root=${myroot}
+	icsfilename='ics.php' 
+	icsdat='ics.dat'
+	icslist='ics.list'
+	icsconf='ics.conf'
+ 
+  # be creative here..
+  icspath=$root'/ics'
+
+	if [ ! -e $icspath'/'$icsfilename ]; then  
+		echo "web app missing of ics!"
+		exit 1 
+	fi
+
+	if [ ! -e $icspath'/'$icslist ]; then  
+		echo "web app missing of ics!"
+		exit 1 
+	fi
+
+	cd $icspath
+
+  if [ -e $icspath'/'$icsdat ]; then
+    rm $icspath'/'$icsdat
+  fi
+	touch $icspath'/'$icsdat
+
+	cat $icspath'/'$icslist |
+	while IFS= read -r myl
+	do
+		cksum -a sha256 -q $myl 2>/dev/null >> $icspath'/'$icsdat
+	done
+
+  ;;
+run )
+
+	root=${myroot}
+	icsfilename='ics.php' 
+	icsdat='ics.dat'
+	icslist='ics.list'
+  icsconf='ics.conf'
+ 
+  # be creative here.. 
+  icspath=$root'/ics'
+
+	if [ ! -e $icspath'/'$icsfilename ]; then  
+		echo "web app missing of ics!"
+		exit 1 
+	fi
+
+	if [ ! -e $icspath'/'$icsdat ]; then  
+		echo "web app missing of ics dat!"
+		exit 1 
+	fi
+
+	if [ ! -e $icspath'/'$icslist ]; then  
+		echo "web app missing of ics list!"
+		exit 1 
+	fi
+
+	if [ ! -e $icspath'/'$icsconf ]; then  
+		echo "web app missing of ics conf!"
+		exit 1 
+	fi
+
+  local arg
+  let i=0
+  local myl 
+
+	while read myl;do
+
+			arg[$i]=${myl}
+			
+			let i=$i+1  
+	done < $icspath'/'$icsdat
+
+  local myp
+  local mys
+  local res
+  let i=0
+  mys=""
+
+	while read myp;do
+
+      mys=${arg[$i]} 
+
+			if [ ! -e $myp ]; then  
+        echo "web app missing file ($i)!!"
+				exit 1 
+			fi
+
+      res=`cksum -a sha256 -q $myp | grep $mys`
+
+      if [ "X$res" = "X" ] ; then
+        echo "mismatch ($i)!!" 
+        exit 1
+      else
+        echo "OK ($mys)"
+      fi
+
+		  let i=$i+1
+	done < $icspath'/'$icslist
+
+  ;;
+* )
+
+  ;;
+esac

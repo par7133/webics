@@ -47,7 +47,7 @@ setup )
 	fi
 
 	if [ ! -e $icspath'/'$icslist ]; then  
-		echo "web app missing of ics!"
+		echo "web app missing of ics list!"
 		exit 1 
 	fi
 
@@ -97,7 +97,7 @@ run )
 	fi
 
   arg[0]=""
-  i=0
+  let i=0
   myl="" 
 
 	while read myl;do
